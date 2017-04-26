@@ -46,7 +46,6 @@ mytrace2 s a = trace (s ++(' ':show a)) a
 --      ZAhO explicit representation
 --      me'au
 --      tenseSumti
---      nup
 --      GOhA
 --      vo'a rule see ../Lojban.hs
 --      make statments explicit
@@ -512,12 +511,6 @@ tanru = isoFoldl handleTanru . (inverse cons) <<< some (gismuP <+> nuP)
 nuP :: Syntax Atom
 nuP = withEmptyState $ choice nuHandlers . (selmaho "NU" &&& bridiUI <&& optSelmaho "KEI")
 
---EvaluationLink (stv 0.75 0.9)
---                  PredicateNode (stv 1.0 0.9) "is_event"
---                  ListLink (stv 1.0 0.0)
---                    ConceptNode (stv 1.0 0.9) "$2"
---                    VariableNode (stv 1.0 0.0) "$4"
-
 nuHandlers = [handleNU "du'u" (mkNuEventLabel "du'u") . rmfst "du'u",
               handleNU "su'u" (mkNuEventLabel "su'u") . rmfst "su'u",
               handleNU "nu"   (mkNuEvent ["fasnu"]) . rmfst "nu",
@@ -556,8 +549,6 @@ nuHandlers = [handleNU "du'u" (mkNuEventLabel "du'u") . rmfst "du'u",
     reorder = mkIso f g where
      f (a:as) = (a, a:as)
      g (_,as) = as
-
---As for "pu'u", "pruce" and "farvi" don't seem quite right
 
 handleNU :: String -> (String -> SynIso [Atom] [Atom]) -> SynIso Atom Atom
 handleNU abstractor nuTypeMarker = Iso f g where
