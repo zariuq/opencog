@@ -45,6 +45,7 @@ mytrace2 s a = trace (s ++(' ':show a)) a
 --      da + quantifier
 --      ZAhO explicit representation
 --      me'au
+--      nup
 --      GOhA
 --      vo'a rule see ../Lojban.hs
 --      make statments explicit
