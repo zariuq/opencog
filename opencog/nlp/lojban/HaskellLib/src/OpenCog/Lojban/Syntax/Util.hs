@@ -161,10 +161,10 @@ ifJustB = mkIso f g where
 
 expandEither :: SynIso (Either a b,c) (Either (a,c) (b,c))
 expandEither = mkIso f g where
-    f (Left a,b) = Left (a,b)
-    f (Right a,b) = Right (a,b)
-    g (Left (a,b)) = (Left a,b)
-    g (Right (a,b)) = (Right a,b)
+    f (Left a,c) = Left (a,c)
+    f (Right b,c) = Right (b,c)
+    g (Left (a,c)) = (Left a,c)
+    g (Right (b,c)) = (Right b,c)
 -------------------------------------------------------------------------------
 --SyntaxReader Util
 -------------------------------------------------------------------------------
