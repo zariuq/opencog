@@ -336,7 +336,7 @@ tagger = post . isoFoldl tagOne . init
                 | otherwise     = ((r,(prev p,u)), (a,Just s ))
                     where prev s = show (read s - 1 )
 
---        Iso       Selbri          Stumti       Atom
+--        Iso       Selbri          Sumti       Atom
 _frame :: SynIso (Selbri,(Atom,Tag)) Atom
 _frame = _evalTv . (id *** (_framePred *** tolist2)) . reorder
     where reorder = mkIso f g

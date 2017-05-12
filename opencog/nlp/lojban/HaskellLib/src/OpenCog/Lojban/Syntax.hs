@@ -48,7 +48,7 @@ mytrace2 s a = trace (s ++(' ':show a)) a
 --      nup
 --      GOhA
 --      vo'a rule see ../Lojban.hs
---      make statments explicit
+--      make statements explicit
 --      ge'e cai on logical conectives and else?
 --      Does SEI have implicit args?
 --      What if you have SEI and UI
@@ -124,6 +124,33 @@ leHandlers = [genInstance "IntensionalInheritanceLink" . rmfst "le"
              ,genInstance "IntensionalInheritanceLink" . rmfst "le'e"
              ,genInstance "InheritanceLink"            . rmfst "lo'e"
              ]
+
+--Handles anykind of LE phrases
+leP' :: Syntax Atom
+leP' = (setWithSize ||| id) --Handle inner quantifier if it exists
+      .
+      reorder2
+      .
+      second (choice leHandlers .> (_ssl . handleBRIDI))
+      .
+      reorder1
+      . (_LE
+      &&& optional pa
+      &&& tolist1 . pureVarNode
+      &&& bridiBETail
+      <&& optSelmaho "KU")
+    where pureVarNode :: Syntax Sumti
+          pureVarNode = insert (Node "VariableNode" "$var" noTv,Nothing)
+
+          reorder1 = mkIso f g where
+              f (le,(pa,(v,(s,a)))) = (pa,(le,(v,(s,a))))
+              g (pa,(le,(v,(s,a)))) = (le,(pa,(v,(s,a))))
+
+          reorder2 = mkIso f g where
+              f (Just pa,a)   = Left (pa,a)
+              f (Nothing,a)   = Right a
+              g (Left (pa,a)) = (Just pa,a)
+              g (Right a)     = (Nothing,a)
 
 -- A Mass according to Lojban is a thing that has all properties of it's parts
 massOf :: String -> SynIso Atom Atom
@@ -607,7 +634,6 @@ handleNU abstractor nuTypeMarker = Iso f g where
                  . _exl . first (varll . mapIso (_typedvarl . addsnd (cTN "PredicateNode")))
                         . second andl)
 
-
 _MOI :: Syntax String
 _MOI = selmaho "MOI"
 
@@ -836,16 +862,16 @@ bridi = bridiGA <+> _bridi
 
 --Deal with a bridi that has a Second Order Statment Attached
 bridiUI :: Syntax Atom
-bridiUI = (handleSOS ||| id) . ifJustA
+bridiUI = (handleSOSNU ||| id) . ifJustA
        <<< (optional _SOS &&& bridi)
 
 addti :: SynIso String String
-statment :: Syntax Atom
-statment = (handleSOS ||| id) . ifJustA
-  <<< optSelmaho "I" &&> optional _SOS &&& statment2
+statement :: Syntax Atom
+statement = (handleSOSNU ||| id) . ifJustA
+  <<< optSelmaho "I" &&> optional _SOS &&& statement2
 
-statment2 :: Syntax Atom
-statment2 = isoFoldl (handleCon . reorder)
+statement2 :: Syntax Atom
+statement2 = isoFoldl (handleCon . reorder)
     <<< bridi &&& many (sepSelmaho "I" &&> _JA_BO &&& bridiUI)
     where reorder = Iso f g where
             f (b1,(con,b2)) = pure (con,[b1,b2])
@@ -858,7 +884,7 @@ addti = mkIso f g
 --Handles questions
 --A SatisfactionLink is used for this
 --The second with a VarNode in the Statement is a fill the blank question
---we wrap the statment in a (Put s (Get s)) that when excuted should fill the blank
+--we wrap the statement in a (Put s (Get s)) that when excuted should fill the blank
 preti :: Syntax Atom
 preti = handleMa <<< handleXu
     where handleMa :: SynIso Atom Atom
@@ -878,13 +904,13 @@ preti = handleMa <<< handleXu
           handleXu = Iso f g where
               f () = do
                   state0 <- get
-                  res <- apply statment ()
+                  res <- apply statement ()
                   state1 <- get
                   flags <- gets sFlags
                   if "xu" `elem` flags
                      then do
                          put state0
-                         res2 <- apply (_exl . addfst var . withFlag "handleXu" statment) ()
+                         res2 <- apply (_exl . addfst var . withFlag "handleXu" statement) ()
                          put state1
                          case res2 of --If it's the whole sentence ingore
                              (ExL noTv (VN "xu")(VN "xu")) -> pure ()
@@ -892,7 +918,7 @@ preti = handleMa <<< handleXu
                          apply _satl res
                     else pure res
               var = Node "VariableNode" "xu" noTv
-              g a = unapply statment a
+              g a = unapply statement a
 
 
 
@@ -905,10 +931,6 @@ _COI = instanceOf . concept . selmaho "COI"
 
 vocative :: Syntax Atom
 vocative = listl . appendAtoms 2 . tolist2 <<< _COI &&& sumtiC
-    where ui = ptp uiP addti (dropTag <<< sumtiAllUI)
-          dropTag = mkIso f g where
-              f (s,_) = s
-              g s = (s,Nothing)
 
 
 freeuiP :: Syntax Atom
@@ -1035,7 +1057,7 @@ uiP = _UI &&& caiP
 
 type UI = (Atom,TruthVal)
 
---TODO: What if you have booth?
+--TODO: What if you have both?
 _SOS :: Syntax (Either SEI UI)
 _SOS = (left . seiP) <+> (right . uiP)
 
@@ -1049,7 +1071,7 @@ withAttitude syn = (first handleSOS ||| id) . reorder
               g (Right (a,mt))     = ((a,mt),Nothing)
 
 --A UI phrase can be considered an implicit
---statment with the predicate 'cinmo'
+--statement with the predicate 'cinmo'
 --the "manage" iso add all necesary info to creat the statement
 --We just have to create instances of this with (selbri &&& mapIso toSumti)
 --before we can create the statement with _frames
@@ -1081,3 +1103,10 @@ handleSEI = fstToState 1 . first tolist1
 --SOS Second Order Sentence
 handleSOS :: SynIso (Either SEI UI,Atom) Atom
 handleSOS = (handleSEI ||| handleUI) . expandEither
+
+--SOS Second Order Sentence with statement/bridi
+handleSOSNU :: SynIso (Either SEI UI,Atom) Atom
+handleSOSNU = (handleSEI ||| handleUI . addLoNu) . expandEither
+  where addLoNu = second (addLo . choice nuHandlers . addfst "nu")
+        addLo = genInstance "InheritanceLink" . ssl . tolist2 . addfst (cVN "$var")
+                    . _eval . addfst (cVN "nu_sumti1") . tolist2 . addsnd (cVN "$var")
