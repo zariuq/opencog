@@ -72,13 +72,15 @@ cTN name    = Node "TypeNode" name noTv
 
 cLL a           = Link "ListLink"                             a     noTv
 cSL a           = Link "SetLink"                              a     noTv
-cSimL a b       = Link "SimilarityLink"                   [a,b]    noTv
+cSimL a b       = Link "SimilarityLink"                   [a,b]     noTv
 cVL a           = Link "VariableList"                         a     noTv
+cTVL tv a b     = Link "TypedVariableLink"                [a,b]     tv
 cInhL tv a b    = Link "InheritanceLink"                  [a,b]     tv
 cImpL tv a b    = Link "ImplicationLink"                  [a,b]     tv
 cIImpL tv a b   = Link "IntensionalImplicationLink"       [a,b]     tv
 cIFaoIFL tv a b = Link "AndLink"          [cImpL tv a b,cImpL tv b a] tv
 cEvalL tv a b   = Link "EvaluationLink"                   [a,b]     tv
+cEquivL tv a b  = Link "EquivalenceLink"                  [a,b]     tv
 cSSL tv a       = Link "SatisfyingSetLink"                    a     tv
 cExL tv a b     = Link "ExistsLink"                       [a,b]     tv
 cFAL tv a b     = Link "ForAllLink"                       [a,b]     tv
