@@ -66,13 +66,30 @@ void HebbianCreationAgent::run()
     if (classserver().isA(source->getType(), HEBBIAN_LINK))
         return;
 
-    HandleSeq notAttentionalFocus;
-    int afb = _bank->getAttentionalFocusBoundary();
-    _bank->get_handles_by_AV(back_inserter(notAttentionalFocus), 0, afb);
-
     // Retrieve the atoms in the AttentionalFocus
+    
     OrderedHandleSet attentionalFocus;
     _bank->get_handle_set_in_attentional_focus(std::inserter(attentionalFocus,attentionalFocus.begin()));
+  
+    HandleSeq topStiInAF;
+    auto afSti = _bank->get_af_max_sti(); 
+    for(const auto& h : attentionalFocus){
+        if(_bank->get_sti(h) >= afSti)
+            topStiInAF.push_back(h);
+    }
+    std::sort(topStiInAF.begin(), topStiInAF.end());
+
+    //  - Get handles with sti [ 0, MinSti(AF)]
+    HandleSeq includesAFAtoms;
+    _bank->get_handles_by_AV(back_inserter(includesAFAtoms), 0, afSti);
+    std::sort(includesAFAtoms.begin(), includesAFAtoms.end());
+
+    HandleSeq notAttentionalFocus;
+    // Atoms not in AF
+    std::set_difference(topStiInAF.begin(), topStiInAF.end(),
+                        includesAFAtoms.begin(), includesAFAtoms.end(),
+                        std::back_inserter(notAttentionalFocus));
+
 
     // Exclude the source atom
     attentionalFocus.erase(source);
@@ -111,19 +128,20 @@ void HebbianCreationAgent::run()
     }
 
     std::default_random_engine generator;
-    std::uniform_int_distribution<int> distribution(0,notAttentionalFocus.size()-1);
+    if(notAttentionalFocus.size() > 0 ){
+        std::uniform_int_distribution<int> distribution(0,(int)notAttentionalFocus.size()-1);
 
-    //How many links outside the AF should be created
-    int farLinks = round(count / localToFarLinks);
+        //How many links outside the AF should be created
+        int farLinks = round(count / localToFarLinks);
 
-    //Pick a random target and create the link if it doesn't exist already
-    for (int i = 0; i < farLinks; i++) {
-        Handle target = notAttentionalFocus[distribution(generator)];
-        Handle link = _as->get_handle(ASYMMETRIC_HEBBIAN_LINK, source, target);
-        if (link == Handle::UNDEFINED)
-            addHebbian(source,target);
+        //Pick a random target and create the link if it doesn't exist already
+        for (int i = 0; i < farLinks; i++) {
+            Handle target = notAttentionalFocus[distribution(generator)];
+            Handle link = _as->get_handle(ASYMMETRIC_HEBBIAN_LINK, source, target);
+            if (link == Handle::UNDEFINED)
+                addHebbian(source,target);
+        }
     }
-
     //Check the ammount of HebbianLinks the Atom has
     IncomingSet iset = source->getIncomingSetByType(HEBBIAN_LINK,true);
 
